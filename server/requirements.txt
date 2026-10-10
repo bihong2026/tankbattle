@@ -1,2 +1,6 @@
 Flask>=3.0
 PyMySQL>=1.1
+# 生产用 WSGI 服务器（server/deploy/tankserver.service 按 4 个 worker 起）。
+# 想直接用 Flask 自带的开发服务器跑，去掉这一行也能起：
+#   TANK_PORT=9010 python app.py
+gunicorn>=21.0

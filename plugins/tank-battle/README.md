@@ -109,9 +109,24 @@ config:
 
 装好之后不改也能玩（单人完全不需要 `serverBase`）。前端每次开局先向宿主半要一遍这几个值当默认。
 
-**想把联机指到别的机器**，别改包里的文件 —— 在 `$DSH_HOME/cordis.patch.yml`（默认
-`~/.dsh/cordis.patch.yml`）里覆盖这个插件的 `serverBase` 就行；也可以直接设环境变量
-`TANK_SERVER_BASE`，它的优先级最高。部署地址属于「谁部署谁填」，所以仓库里只放本机默认值。
+**想把联机指到别的机器**（或者连别人已经架好的服务），别改包里的文件 —— 在
+`$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh/cordis.patch.yml`，这一层在每个 bundle 之后生效）
+里覆盖这个插件的 `serverBase` 就行：
+
+```yaml
+- id: tank-battle
+  config:
+    serverBase: 'http://<地址>/tanks'   # 末尾不要斜杠，宿主半会自己接 /api/...
+```
+
+> patch 的 `config` 是**整体替换**而不是深合并。这里没写的键会回落到代码里的默认值
+> （和上面那几个默认值一致，自检会核对），所以只写 `serverBase` 也不会出问题。
+
+也可以直接设环境变量 `TANK_SERVER_BASE`，它的优先级最高。三种来源的优先级是
+**环境变量 → 插件设置 → 代码默认值**。
+
+部署地址属于「谁部署谁填」，所以仓库里只放本机默认值；怎么把服务架到公网、
+怎么在既有 80 端口上做路径反代，见 [`server/README.md`](../../server/README.md) 的「放到公网」。
 
 ## 宿主半的路由
 

@@ -48,6 +48,143 @@ sudo systemctl enable --now tankserver
 systemctl status tankserver
 ```
 
+## 放到公网（实测跑通的一套）
+
+本机自己玩不用看这节。要让外面的人也能联机，把这份服务放到一台有公网 IP 的机器上就行。
+下面是照着做就能复现的一整套，括号里记的是当时踩到的坑。
+
+参照环境：Ubuntu 24.04 / 4 核 / 3.7G 内存，而且这台机器上**已经有别的服务在跑**。
+
+### 1. 装 MySQL，压到最小
+
+```sh
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
+```
+
+这台机器上还跑着别的东西，别让 MySQL 按默认吃内存（默认常驻 300MB 起）。写一份
+`/etc/mysql/mysql.conf.d/99-tankbattle.cnf`：
+
+```ini
+[mysqld]
+bind-address = 127.0.0.1          # 只服务本机的 tankserver，不对外开 3306
+skip-name-resolve = ON
+innodb_buffer_pool_size = 64M
+performance_schema = OFF          # 这一行能省一两百 MB 常驻内存
+max_connections = 64
+table_open_cache = 128
+tmp_table_size = 8M
+max_heap_table_size = 8M
+key_buffer_size = 8M
+```
+
+`sudo systemctl restart mysql` 之后，常驻内存从 300MB+ 落到 **约 150MB**。
+
+### 2. 建库 + 一个只能从本机连的账号
+
+```sh
+PW=$(openssl rand -hex 16)        # 别用默认那对口令
+sudo mysql -e "
+CREATE DATABASE IF NOT EXISTS tankbattle DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS 'tank'@'127.0.0.1' IDENTIFIED BY '$PW';
+GRANT ALL PRIVILEGES ON tankbattle.* TO 'tank'@'127.0.0.1';
+FLUSH PRIVILEGES;"
+sudo mysql < schema.sql
+```
+
+是 `'tank'@'127.0.0.1'` 不是 `'tank'@'%'` —— 服务就在本机跑，没理由让这个账号能从任何地方连。
+
+### 3. 代码与虚拟环境
+
+```sh
+sudo mkdir -p /opt/tankbattle && sudo chown $USER /opt/tankbattle
+# 把仓库里的 server/ 放进 /opt/tankbattle/server（整个仓库放进去也行）
+cd /opt/tankbattle && python3 -m venv venv
+./venv/bin/pip install -r server/requirements.txt
+```
+
+> 国内机器上 `pypi.org` 常常不通，加 `-i https://mirrors.aliyun.com/pypi/simple/`。
+
+### 4. 口令单独放一个 root 只读文件
+
+systemd 的 unit 文件通常人人可读，所以**不要把数据库口令写进 unit**，改用 `EnvironmentFile`：
+
+```sh
+sudo tee /etc/tankbattle.env >/dev/null <<EOF
+TANK_DB_HOST=127.0.0.1
+TANK_DB_USER=tank
+TANK_DB_PASSWORD=<上一步生成的那串>
+TANK_DB_NAME=tankbattle
+EOF
+sudo chown root:root /etc/tankbattle.env && sudo chmod 600 /etc/tankbattle.env
+```
+
+unit 里写 `EnvironmentFile=-/etc/tankbattle.env`（前面那个 `-` 表示文件不存在也不报错）。
+
+### 5. systemd 起服务
+
+`deploy/tankserver.service` 拿去改三处：
+
+- **MySQL 的服务名**：RHEL 系是 `mysqld.service`，**Ubuntu 是 `mysql.service`**
+  （在 Ubuntu 上写 `mysqld.service`，服务根本起不来）。模板里两种写法都提到了。
+- **`ExecStart` 的 `--bind`**：改成 `127.0.0.1:9010`，只绑回环，对外交给反代（下一步）。
+  公网直接暴露一个没有鉴权的服务没有必要。
+- 顺手加一条 `MemoryMax=512M`。机器上还有邻居时，这条能保证它失控了也挤不掉别人。
+
+### 6. 用路径反代出去，不占新端口
+
+80 端口上已经有站点时（这台机器上就有），**不要新建 server 块去抢端口**，往已有的 server
+里加一段 `location` 即可 —— 完整片段见 `deploy/nginx-tanks.conf`：
+
+```nginx
+location /tanks/ {
+    limit_req zone=tanks burst=400 nodelay;   # 限流区定义在 http 块
+    limit_conn tanksconn 64;
+    proxy_pass http://127.0.0.1:9010/;        # 末尾这个 / 会剥掉 /tanks 前缀
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+`limit_req_zone` / `limit_conn_zone` **只能写在 http 块**，所以单独放一个
+`/etc/nginx/conf.d/tanks-limit.conf`（`nginx.conf` 会 include 这个目录），文件名随便取。
+
+改完 `sudo nginx -t && sudo systemctl reload nginx`。
+
+> **两个坑，都实际踩到了。**
+> 1. **别把备份文件留在 `sites-enabled/` 里。** 那里的文件会被全部加载，一个
+>    `gamehub.bak-xxx` 就会导致 `a duplicate default server for 0.0.0.0:80`，
+>    整个 nginx 起重失败。备份挪到 `/etc/nginx/backups/`。
+> 2. `reload` 完**立刻** curl 可能拿到 404。那是优雅重载期间旧 worker 还在处理连接，
+>    过一秒就好 —— 不是配置没生效，别急着回去改配置。
+
+### 7. 从外面验一遍
+
+```sh
+curl http://<公网IP>/tanks/api/health
+# {"ok":true,"service":"tankbattle","database":{"database":"tankbattle","ok":true,...}}
+
+# 契约也从外面跑一遍，确认反代没有改变任何字段（这一步最值得做）
+python3 test/client_contract.py http://<公网IP>/tanks
+```
+
+插件的「服务器地址」填 `http://<公网IP>/tanks`（**末尾不要斜杠**，宿主半会自己接 `/api/...`）。
+
+### 限流参数别照抄，先算一遍
+
+第一版按「挡住脚本」的思路设了 `rate=40r/s`，结果**会误伤正常玩家** —— 按实测一桌的
+客人自己就要 40 req/s（50ms 一拍 × 2 请求），正好压在线上；同一个 NAT 出口（公司、宿舍）
+两个人一起玩就是 73 req/s，必然被拦。
+
+最后定的是 **`rate=200r/s` + `burst=400` + `limit_conn 64`**，实测：
+
+| 负载 | 实际速率 | 结果 |
+| --- | --- | --- |
+| 一桌玩家（按真节奏打 6 秒） | 72 req/s | 432 个请求**全 200**，零误伤 |
+| 脚本刷量（1200 请求不限速） | — | 只放行 548 个，**挡下 652 个 503** |
+
+判据一句话：**阈值要明显高于「一桌 73 req/s」**，否则罚的是正常玩家。它只是兜底，
+不是容量管理 —— 真能开几桌由上面那节容量数字说了算。
+
 ## 配置
 
 全部走环境变量，都写在 `deploy/tankserver.service` 的 `Environment=` 里：
@@ -176,12 +313,13 @@ python3 test/scale.py http://127.0.0.1:9010
 ## 文件
 
 ```
-app.py                    全部 HTTP 接口
-db.py                     PyMySQL 连接（按线程缓存 + 自动重连）
-schema.sql                建库建表
-requirements.txt          Flask + PyMySQL
-deploy/tankserver.service systemd unit（gunicorn 4 worker，9010）
-test/smoke.py             服务端自检（建库、算分、房间生命周期）
-test/client_contract.py   插件前端的调用契约自检（字段名对齐）
-test/scale.py             容量压测（造 N 个真房间按真节奏压，出「几桌开始追不上」）
+app.py                      全部 HTTP 接口
+db.py                       PyMySQL 连接（按线程缓存 + 自动重连）
+schema.sql                  建库建表
+requirements.txt            Flask + PyMySQL + gunicorn
+deploy/tankserver.service   systemd unit（gunicorn 4 worker，9010）
+deploy/nginx-tanks.conf     反代 + 限流的 nginx 片段（放到公网时用）
+test/smoke.py               服务端自检（建库、算分、房间生命周期）
+test/client_contract.py     插件前端的调用契约自检（字段名对齐）
+test/scale.py               容量压测（造 N 个真房间按真节奏压，出「几桌开始追不上」）
 ```

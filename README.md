@@ -50,8 +50,18 @@ python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
 ```
 
 插件的默认后台地址就是 `http://127.0.0.1:9010`，所以本机这么起起来之后不用改插件。
-想指到别的机器，在 `$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh/cordis.patch.yml`）里
-覆盖插件的 `serverBase`，或设环境变量 `TANK_SERVER_BASE`。
+
+**要让公网上的人一起玩**，`server/README.md` 里有一整套照做可复现的步骤（MySQL 最小化
+配置、只能本机连的账号、systemd unit、在既有 80 端口上用 `/tanks/` 路径反代、按真实
+节奏算出来的限流档位），现成的模板在 `server/deploy/`。跑通之后是这么个形态：
+
+- 后端只监听 `127.0.0.1:9010`，**不占任何新端口**；
+- 对外走 `http://<你的域名或公网 IP>/tanks`。
+
+把插件指过去有两种办法（任选其一，改完要重启应用）：
+
+- 改插件 `cordis.patch.yml` 里的 `serverBase`；
+- 或者设环境变量 `TANK_SERVER_BASE=https://...`。
 
 细节、接口清单、容量实测与部署脚本见 [`server/README.md`](server/README.md)。
 
