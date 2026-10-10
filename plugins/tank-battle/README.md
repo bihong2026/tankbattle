@@ -19,9 +19,9 @@ profile 会直接报错（「managed exclusively by the desktop application」�
 
 | 形式 | 填什么 |
 | --- | --- |
+| Git（推荐） | `https://github.com/bihong2026/tankbattle.git#path:plugins/tank-battle`<br>打不开 GitHub 就用 `https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle` |
 | 本地目录 | 把仓库克隆到本地后，填 `plugins/tank-battle` 这个目录的绝对路径（例如 `D:\code\tankbattle\plugins\tank-battle`） |
 | 包名 | `dsh-tank-battle` |
-| Git | `<仓库地址>#path:plugins/tank-battle`，例如 `https://gitee.com/<你>/tankbattle.git#path:plugins/tank-battle` |
 
 装完后侧栏会出现「打坦克」。版本号显示在页面右上角；如果页面提示「请完整退出应用再启动」，
 说明前端半已经换了、宿主半还是旧的，退出重开即可。
@@ -31,7 +31,8 @@ profile 会直接报错（「managed exclusively by the desktop application」�
 非桌面 profile 可以直接用 `dsh plugin`（它会把参数转发给 `pnpm`，所以 `pnpm` 要在 `PATH` 上）：
 
 ```sh
-dsh plugin --profile <profile> add "git+https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle"
+# 直接从 GitHub 装（Gitee 镜像把 github.com/bihong2026 换成 gitee.com/bihong2023 即可）
+dsh plugin --profile <profile> add "git+https://github.com/bihong2026/tankbattle.git#path:plugins/tank-battle"
 # 或者先克隆再装本地目录
 dsh plugin --profile <profile> add ./plugins/tank-battle
 dsh plugin --profile <profile> remove dsh-tank-battle

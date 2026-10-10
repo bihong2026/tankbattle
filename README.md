@@ -1,32 +1,60 @@
-# 打坦克（Tank Battle）
+# 打坦克 · Tank Battle
 
-一个 **DeepSeek Harness 插件**：在侧栏开一整页，玩红白机经典打坦克（Battle City）。
-单人打 NPC、和同时在线的别人**组队**打 NPC，或者各带一队 NPC**互相对战**，带积分榜。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/bihong2026/tankbattle?label=stars)](https://github.com/bihong2026/tankbattle/stargazers)
+[![plugin version](https://img.shields.io/github/package-json/v/bihong2026/tankbattle?filename=plugins%2Ftank-battle%2Fpackage.json&label=dsh-tank-battle&color=4d6bfe)](plugins/tank-battle/package.json)
+[![DeepSeek Harness plugin](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4d6bfe.svg)](#安装)
+[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#安装)
+
+一个 **DeepSeek Harness（dsh）插件**：在侧栏开一整页，玩红白机经典打坦克（Battle City）。
+单人打 NPC、和同时在线的其他玩家**组队**打 NPC，或者各带一队 NPC**互相对战**，带积分榜。
 
 游戏本体**纯浏览器端**跑（Canvas + `requestAnimationFrame`），**不依赖任何第三方库**，
 也**不改 Harness 官方的任何一个文件**。联机部分有一套可选的后台服务（本仓库 `server/`），
-**不装它也能玩**——只是大厅里没人，积分榜不显示。
+**不装它也能玩**——只是大厅里没人、积分榜不显示。
 
 ```
 plugins/tank-battle/   插件本体（浏览器半 + 宿主半 + 自检 + 一张免安装的预览页）
 server/                可选的联机后台服务（Flask + MySQL）
 ```
 
+## 仓库
+
+同一份代码、同一个提交历史，同时托管在两处：
+
+| 托管 | 地址 | 说明 |
+| --- | --- | --- |
+| **GitHub**（主） | <https://github.com/bihong2026/tankbattle> | Issue / PR 走这里 |
+| Gitee（镜像） | <https://gitee.com/bihong2023/tankbattle> | 国内镜像，省得打不开 GitHub |
+
+```sh
+git clone https://github.com/bihong2026/tankbattle.git
+```
+
+> 打不开 GitHub 就把上面这条换成 Gitee 地址，其余步骤完全一样。下面的命令都给出两个地址。
+
 ## 安装
 
-### 桌面版（DeepSeek Harness 桌面应用）
+### 一分钟装上（桌面版）
 
 桌面版**没有可用的命令行安装方式**：`dsh` 启动器对 `desktop` 这个 profile 会直接报错
 （`profile "desktop" is managed exclusively by the Electron application`），它由桌面应用
 独占管理。所以走界面装：
 
 1. 打开应用 → **插件** → **添加插件**；
-2. 粘贴下面任意一种地址，点安装；
+2. 粘贴下面这个地址，点安装：
+
+   ```
+   https://github.com/bihong2026/tankbattle.git#path:plugins/tank-battle
+   ```
+
 3. **完整退出应用再启动**（关窗口不算，要从托盘退出）。
+
+装完侧栏会多出一项「打坦克」，点开就能玩。三种地址形式都能用：
 
 | 形式 | 填什么 |
 | --- | --- |
-| Git 地址 | `https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle` |
+| Git 地址（推荐） | `https://github.com/bihong2026/tankbattle.git#path:plugins/tank-battle`<br>打不开 GitHub 就用 `https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle` |
 | 本地目录 | 把仓库克隆到本地后，填 `plugins/tank-battle` 的**绝对路径**，例如 `D:\code\tankbattle\plugins\tank-battle` |
 | 包名 | `dsh-tank-battle`（需要先把它发布到包源） |
 
@@ -36,11 +64,12 @@ server/                可选的联机后台服务（Flask + MySQL）
 `<profile>` 换成你自己的 profile 名，例如 `web`）：
 
 ```sh
-# 方式一：直接从 Gitee 装（插件在仓库子目录里，用 #path: 指过去）
-dsh plugin --profile <profile> add "git+https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle"
+# 方式一：直接从 GitHub 装（插件在仓库子目录里，用 #path: 指过去）
+dsh plugin --profile <profile> add "git+https://github.com/bihong2026/tankbattle.git#path:plugins/tank-battle"
+# 　Gitee 镜像：把 github.com/bihong2026 换成 gitee.com/bihong2023 即可
 
 # 方式二：先克隆，再装本地目录（相对路径按「你敲命令时所在的目录」解析）
-git clone https://gitee.com/bihong2023/tankbattle.git
+git clone https://github.com/bihong2026/tankbattle.git
 cd tankbattle
 dsh plugin --profile <profile> add ./plugins/tank-battle
 
@@ -136,6 +165,19 @@ node test/preview.mjs  # 预览页：首屏 → 单人 → 组队两套键 → �
 | [`plugins/tank-battle/README.md`](plugins/tank-battle/README.md) | 玩法、按键、三种模式、四档 AI、插件设置、故障排查 |
 | [`server/README.md`](server/README.md) | 后台服务：接口清单、部署、容量、数据库选型 |
 | [`plugins/tank-battle/preview.html`](plugins/tank-battle/preview.html) | 免安装试玩页 |
+
+## 标签（Topics）
+
+本仓库刻意打了这几组标签，方便在 GitHub 和插件市场里被搜到：
+
+| 标签 | 含义 |
+| --- | --- |
+| `dsh-plugin`、`dsh` | 这是一个 DeepSeek Harness（dsh）插件 |
+| `deepseek-harness`、`deepseek-harness-plugin` | 运行宿主 |
+| `cordis-plugin` | 底层插件框架（Harness 用 Cordis 装载插件） |
+| `tank-battle`、`battle-city`、`tank-game` | 玩法关键词 |
+| `canvas-game`、`html5-game` | 实现方式（纯浏览器端 Canvas） |
+| `multiplayer` | 支持联机 |
 
 ## 许可
 
