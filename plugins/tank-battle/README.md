@@ -26,6 +26,21 @@ profile 会直接报错（「managed exclusively by the desktop application」�
 装完后侧栏会出现「打坦克」。版本号显示在页面右上角；如果页面提示「请完整退出应用再启动」，
 说明前端半已经换了、宿主半还是旧的，退出重开即可。
 
+### 命令行安装（`web` / `headless` / `sdk` / `acp` 等 profile）
+
+非桌面 profile 可以直接用 `dsh plugin`（它会把参数转发给 `pnpm`，所以 `pnpm` 要在 `PATH` 上）：
+
+```sh
+dsh plugin --profile <profile> add "git+https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle"
+# 或者先克隆再装本地目录
+dsh plugin --profile <profile> add ./plugins/tank-battle
+dsh plugin --profile <profile> remove dsh-tank-battle
+```
+
+**增删组合包后必须重启那个 profile** 才会生效。桌面版的 `desktop` profile 不接受命令行安装，
+只能走上面的界面。
+
+
 ## 怎么玩
 
 | 操作 | 按键 |

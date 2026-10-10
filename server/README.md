@@ -290,6 +290,52 @@ sync worker）：
 - **隔着办公网压是不算数的**。同一份压测从办公网打过去，并发一过 2 就塌到几十 req/s
   （同一个脚本、同一个服务，回环 2700 req/s）。所以要在服务器本机跑，量到的才是服务本身。
 
+## 换成别的数据库？（实测数据，省得你重跑）
+
+数据库层全在 `db.py`，连接参数全走环境变量 `TANK_DB_HOST` / `TANK_DB_PORT` / `TANK_DB_USER` /
+`TANK_DB_PASSWORD` / `TANK_DB_NAME`，所以换机器、换库都不用改代码。
+
+**先记住判据**：联机是轮询的，客人 50ms 一拍、房主 60ms 一拍，**每拍要打 3 条 SQL**
+（见 `plugins/tank-battle/client.js` 的 `hostNet` / `guestNet`）。所以真正的指标是
+「**每拍花在数据库上多少毫秒**」，不是数据库的总吞吐。`test/db_roundtrip.py` 量的就是单条语句往返：
+
+```
+本机 MySQL  1 条语句 p50 0.176ms  →  每拍约 0.5ms（占 50ms 拍子的 1%）
+```
+
+### 换 SQLite
+
+`test/sqlite_bench.py`（纯标准库、4 个独立进程 = 4 个 gunicorn worker、25 房、每拍 2 写 1 读）：
+
+| 日志模式 | 吞吐 | 一拍 p50 | p99 | 写锁冲突 |
+| --- | --- | --- | --- | --- |
+| **WAL + `synchronous=NORMAL`** | **51,342 req/s** | 1.49ms | 14.83ms | 0 |
+| WAL + `synchronous=FULL` | 2,863 req/s | 21.06ms | 2,155ms | 0 |
+| 回滚日志 + `synchronous=FULL`（SQLite 默认） | 579 req/s | 128.33ms | 6,470ms | 0 |
+
+**能扛，但必须显式 `journal_mode=WAL` + `synchronous=NORMAL`。** 用 SQLite 的默认档位只有
+579 req/s，WAL 但同步 FULL 也只有 2,863 req/s 且 p99 到 2 秒 —— 表现就是「画面卡死」，不是「慢一点」。
+代价是 NORMAL 下掉电可能丢最后几个事务（对局画面无所谓，积分窗口有界）。
+
+需要改的地方：`ON DUPLICATE KEY UPDATE ... VALUES(x)` ×3 → `ON CONFLICT(...) DO UPDATE ... excluded.x`；
+`NOW() - INTERVAL 300 SECOND` → `datetime('now','-300 seconds')`；`IF()` → `iif()`；
+`%s` → `?`；游标换 `row_factory = sqlite3.Row`；schema 里的 `ON UPDATE CURRENT_TIMESTAMP`
+SQLite 没有，要自己补。
+
+### 换远程 MySQL
+
+**只有一个前提：必须和本服务同地域、同一个 VPC（走内网）。** 每拍 = 3 × 网络往返：
+
+| 数据库位置 | 单程 RTT | 每拍开销 | 占 50ms 拍子 |
+| --- | --- | --- | --- |
+| 同地域云数据库（内网 VPC） | ≈0.3~0.5ms | 1.5ms | 3% ✅ |
+| 公网同省 IDC | ≈5ms | 15ms | 30% ⚠️ |
+| 公网跨地域 / 异地办公网 | ≈20ms | 60ms | 120% ❌ 必然卡顿 |
+
+走公网就**别想了**：实测云主机到境内目标的 TCP 连接延迟就在 3.5~11ms，代入正好是
+10~33ms/拍，把 50ms 的余量啃掉一大半。另外快照 JSON 每帧约 2~4KB、房主每 60ms 推一次，
+25 桌时应用↔数据库这条链路要扛约 10Mbps —— 本机 MySQL 是内存搬运不花钱，走远程要额外买单。
+
 ## 自检
 
 三份，都只用标准库，都不需要装任何东西。
@@ -322,4 +368,6 @@ deploy/nginx-tanks.conf     反代 + 限流的 nginx 片段（放到公网时用
 test/smoke.py               服务端自检（建库、算分、房间生命周期）
 test/client_contract.py     插件前端的调用契约自检（字段名对齐）
 test/scale.py               容量压测（造 N 个真房间按真节奏压，出「几桌开始追不上」）
+test/sqlite_bench.py        换 SQLite 时用：多进程按真节奏压写，比三种日志模式
+test/db_roundtrip.py        量单条 SQL 的往返成本（判「换远程数据库」划不划算时用它）
 ```

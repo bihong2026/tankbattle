@@ -1,82 +1,115 @@
 # 打坦克（Tank Battle）
 
-一个 DeepSeek Harness 插件：在侧栏开一个整页，红白机经典打坦克（Battle City）。
+一个 **DeepSeek Harness 插件**：在侧栏开一整页，玩红白机经典打坦克（Battle City）。
+单人打 NPC、和同时在线的别人**组队**打 NPC，或者各带一队 NPC**互相对战**，带积分榜。
 
-- **单人**打 NPC，四档 AI 随时换；
-- **组队**：发现同时在线的其他玩家，邀请一起打中立的 NPC；
-- **对战**：各自带一队 NPC 互相对攻，两边各有基地；
-- 带在线用户发现、邀请、房间与**积分榜**。
-
-游戏本体纯浏览器端跑（Canvas + `requestAnimationFrame`），不依赖任何第三方库，也不改
-Harness 官方的任何一个文件。联机部分有一套可选的后台服务（本仓库的 `server/`），
-**不装它也能玩**，只是大厅会是空的。
+游戏本体**纯浏览器端**跑（Canvas + `requestAnimationFrame`），**不依赖任何第三方库**，
+也**不改 Harness 官方的任何一个文件**。联机部分有一套可选的后台服务（本仓库 `server/`），
+**不装它也能玩**——只是大厅里没人，积分榜不显示。
 
 ```
-plugins/tank-battle/   插件本体（浏览器半 + 宿主半 + 自检 + 一张免安装预览页）
+plugins/tank-battle/   插件本体（浏览器半 + 宿主半 + 自检 + 一张免安装的预览页）
 server/                可选的联机后台服务（Flask + MySQL）
 ```
 
-## 装插件
+## 安装
 
-桌面版（DeepSeek Harness）**没有可用的命令行安装方式** —— `dsh` 启动器对 `desktop` 这个
-profile 会直接报错（「managed exclusively by the desktop application」），它由桌面应用
+### 桌面版（DeepSeek Harness 桌面应用）
+
+桌面版**没有可用的命令行安装方式**：`dsh` 启动器对 `desktop` 这个 profile 会直接报错
+（`profile "desktop" is managed exclusively by the Electron application`），它由桌面应用
 独占管理。所以走界面装：
 
 1. 打开应用 → **插件** → **添加插件**；
-2. 粘下面任意一种地址，点安装；
+2. 粘贴下面任意一种地址，点安装；
 3. **完整退出应用再启动**（关窗口不算，要从托盘退出）。
 
 | 形式 | 填什么 |
 | --- | --- |
-| 本地目录 | 把本仓库克隆到本地后，填 `plugins/tank-battle` 的绝对路径 |
-| 包名 | `dsh-tank-battle` |
-| Git | `<仓库地址>#path:plugins/tank-battle` |
+| Git 地址 | `https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle` |
+| 本地目录 | 把仓库克隆到本地后，填 `plugins/tank-battle` 的**绝对路径**，例如 `D:\code\tankbattle\plugins\tank-battle` |
+| 包名 | `dsh-tank-battle`（需要先把它发布到包源） |
 
-装完侧栏多出一项「打坦克」。玩法、模式、AI 档位、插件设置、故障排查都在
+### 命令行（`web` / `headless` / `sdk` / `sdk-minimal` / `acp` 等 profile）
+
+非桌面 profile 可以用 `dsh plugin` 装（它把参数转发给 `pnpm`，所以 **`pnpm` 要在 `PATH` 上**；
+`<profile>` 换成你自己的 profile 名，例如 `web`）：
+
+```sh
+# 方式一：直接从 Gitee 装（插件在仓库子目录里，用 #path: 指过去）
+dsh plugin --profile <profile> add "git+https://gitee.com/bihong2023/tankbattle.git#path:plugins/tank-battle"
+
+# 方式二：先克隆，再装本地目录（相对路径按「你敲命令时所在的目录」解析）
+git clone https://gitee.com/bihong2023/tankbattle.git
+cd tankbattle
+dsh plugin --profile <profile> add ./plugins/tank-battle
+
+# 卸载
+dsh plugin --profile <profile> remove dsh-tank-battle
+
+# 装完启动该 profile
+dsh --profile <profile>
+```
+
+两点说明：
+
+- **装完（或升级、卸载）必须重启那个 profile** —— 组合包的增删只在启动时生效。
+  如果页面顶部提示「请完整退出应用再启动」，就是前端半已经换了、宿主半还是旧的。
+- 本插件**没有构建步骤**（纯 JS、零依赖、`package.json` 里没有 `prepare` 脚本），
+  所以不会撞上 pnpm ≥10 的 `allowBuilds` 拦截。
+
+装好之后侧栏会多出一项「打坦克」。玩法、模式、AI 档位、插件设置与故障排查见
 [`plugins/tank-battle/README.md`](plugins/tank-battle/README.md)。
 
 ## 先看一眼再装
 
-`plugins/tank-battle/preview.html` 双击就能打开（`file://` 也行），三种模式、四档 AI、
-屏幕上的方向键都能用；它引的就是插件里同一份 `client.js`，不是另抄一版。
+`plugins/tank-battle/preview.html` **双击就能打开**（`file://` 也行，页面不依赖 `fetch`）。
+单人 / 组队 / 对战三种模式都能玩，四档 AI 随时切换，屏幕上的方向键也能用
+（二号位是 `I` `J` `K` `L` + `U`）。它引的就是插件里**同一份** `client.js`，不是另抄一版。
 
 ## 起联机后台（可选）
+
+**不装后台也能玩**：单人模式、预览页都跟后台无关；组队和对战才需要它。
 
 ```sh
 cd server
 mysql -u root -p < schema.sql        # 建库建表（库名 tankbattle）
 python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
-./venv/bin/python app.py             # 默认 0.0.0.0:9010
+./venv/bin/python app.py             # 默认监听 0.0.0.0:9010
 ```
 
-插件的默认后台地址就是 `http://127.0.0.1:9010`，所以本机这么起起来之后不用改插件。
+插件的默认后台地址就是 `http://127.0.0.1:9010`，所以本机这么起起来之后**不用改插件**。
 
-**要让公网上的人一起玩**，`server/README.md` 里有一整套照做可复现的步骤（MySQL 最小化
-配置、只能本机连的账号、systemd unit、在既有 80 端口上用 `/tanks/` 路径反代、按真实
-节奏算出来的限流档位），现成的模板在 `server/deploy/`。跑通之后是这么个形态：
+**要让公网上的人一起玩**，[`server/README.md`](server/README.md) 里有一整套照做可复现的步骤
+（MySQL 最小化配置、只能本机连的账号、systemd unit、在既有 80 端口上用 `/tanks/` 路径反代、
+按真实节奏算出来的限流档位），现成模板在 `server/deploy/`。跑通之后是这么个形态：
 
 - 后端只监听 `127.0.0.1:9010`，**不占任何新端口**；
 - 对外走 `http://<你的域名或公网 IP>/tanks`。
 
-把插件指过去有两种办法（任选其一，改完要重启应用）：
+把插件指过去有两种办法（任选其一，**改完要重启**）：
 
 - 改插件 `cordis.patch.yml` 里的 `serverBase`；
 - 或者设环境变量 `TANK_SERVER_BASE=https://...`。
 
-细节、接口清单、容量实测与部署脚本见 [`server/README.md`](server/README.md)。
+接口清单、容量实测（25~50 桌的拐点是怎么量出来的）与部署脚本见
+[`server/README.md`](server/README.md)。
 
 ## 身份
 
 联机要有个名字挂在积分榜上。插件按两条来源取，都在**宿主半**读取，凭证不出那个进程：
 
 1. **登录的 DeepSeek 账号** —— 走 Harness 自带的账号服务，取稳定账号 UID；
-2. **游客** —— 没登录就用一个按 harness home 生成的本机游客号（`guest-` 开头）。
+2. **游客** —— 没登录就用一个按 harness home 生成的本机游客号（`guest-` 开头，重启不变）。
 
 所以**单人玩法完全不需要登录**，也用不着后台服务。
 
+> ⚠️ 官方账号服务是**可选依赖**：宿主里没有它时插件照常工作，只是身份退回游客。
+
 ## 自检
 
-插件的三套自检不联网、不依赖第三方库、不开真浏览器，直接用 `node` 跑：
+插件的三套自检**不联网、不依赖第三方库、不开真浏览器**，直接用 `node` 跑
+（用一个假 React + 假 DOM + 假画布把整页真跑起来）：
 
 ```sh
 cd plugins/tank-battle
@@ -85,7 +118,17 @@ node test/render.mjs   # 首屏 → 大厅 → 邀请 → 接受 → 开房 → 
 node test/preview.mjs  # 预览页：首屏 → 单人 → 组队两套键 → 对战双队比分
 ```
 
-后台服务那侧有自己三份（只用 Python 标准库，见 [`server/README.md`](server/README.md)）。
+后台服务那侧也有自己几套，**只用 Python 标准库**（见 [`server/README.md`](server/README.md)），
+其中 `server/test/scale.py` 是按真实联机节拍压容量的、`server/test/sqlite_bench.py` 与
+`server/test/db_roundtrip.py` 是换数据库时用的实测脚本。
+
+## 文档
+
+| 文件 | 内容 |
+| --- | --- |
+| [`plugins/tank-battle/README.md`](plugins/tank-battle/README.md) | 玩法、按键、三种模式、四档 AI、插件设置、故障排查 |
+| [`server/README.md`](server/README.md) | 后台服务：接口清单、部署、容量、数据库选型 |
+| [`plugins/tank-battle/preview.html`](plugins/tank-battle/preview.html) | 免安装试玩页 |
 
 ## 许可
 
