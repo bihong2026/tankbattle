@@ -172,9 +172,9 @@ node test/preview.mjs  # 预览页：首屏 → 单人 → 组队两套键 → �
 
 | 标签 | 含义 |
 | --- | --- |
-| `dsh-plugin`、`dsh` | 这是一个 DeepSeek Harness（dsh）插件 |
-| `deepseek-harness`、`deepseek-harness-plugin` | 运行宿主 |
-| `cordis-plugin` | 底层插件框架（Harness 用 Cordis 装载插件） |
+| `dsh`、`dsh-plugin` | 这是一个 DeepSeek Harness（dsh）插件 |
+| `deepseek`、`deepseek-harness`、`deepseek-harness-plugin` | 运行宿主 |
+| `cordis`、`cordis-plugin` | 底层插件框架（Harness 用 Cordis 装载插件） |
 | `tank-battle`、`battle-city`、`tank-game` | 玩法关键词 |
 | `canvas-game`、`html5-game` | 实现方式（纯浏览器端 Canvas） |
 | `multiplayer` | 支持联机 |
