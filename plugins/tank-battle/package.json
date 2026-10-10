@@ -1,6 +1,6 @@
 {
   "name": "dsh-tank-battle",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "license": "MIT",
   "description": "打坦克：在侧栏开一个页面，红白机经典打坦克（Battle City）。单人/组队打 NPC，也可以各带一队 NPC 互相对战，四档 AI 随时换，带在线用户发现与积分榜",

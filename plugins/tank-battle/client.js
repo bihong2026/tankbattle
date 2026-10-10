@@ -30,7 +30,7 @@ window.__ModuleLoader__.load({
 		/** 宿主半注册的路由前缀。 */
 		const API = "/tank-battle";
 		/** 前端半自己的版本，必须与 package.json 的 version 一致（自检会核对）。 */
-		const PLUGIN_VERSION = "0.3.0";
+		const PLUGIN_VERSION = "0.3.1";
 
 		// ==================== 尺寸与常量 ====================
 

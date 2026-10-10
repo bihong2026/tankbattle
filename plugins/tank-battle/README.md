@@ -115,33 +115,41 @@ dsh plugin --profile <profile> remove dsh-tank-battle
 
 ```yaml
 config:
-  defaultAi: 'veteran'                  # rookie / veteran / hunter / ace
-  enemyCount: 20                        # 4 到 60
-  lives: 3                              # 1 到 9
+  defaultAi: 'veteran'                        # rookie / veteran / hunter / ace
+  enemyCount: 20                              # 4 到 60
+  lives: 3                                    # 1 到 9
   sound: true
-  serverBase: 'http://127.0.0.1:9010'   # 联机用的后台服务；默认本机
+  serverBase: 'http://122.51.206.118/tanks'   # 联机用的后台服务；默认是作者架好的公网服务
 ```
 
-装好之后不改也能玩（单人完全不需要 `serverBase`）。前端每次开局先向宿主半要一遍这几个值当默认。
+装好之后不改也能玩：单人模式跟后台无关；**联机也开箱可用**，因为默认地址指向仓库作者
+公网部署的那一份服务。前端每次开局先向宿主半要一遍这几个值当默认。
 
-**想把联机指到别的机器**（或者连别人已经架好的服务），别改包里的文件 —— 在
-`$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh/cordis.patch.yml`，这一层在每个 bundle 之后生效）
-里覆盖这个插件的 `serverBase` 就行：
+**想连自己架的服务**（或者连别人架好的），别改包里的文件 —— 在
+`$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh/cordis.patch.yml`，这一层在每个 bundle 之后生效、
+且对所有 profile 生效）里覆盖这个插件的 `serverBase` 就行：
 
 ```yaml
 - id: tank-battle
   config:
-    serverBase: 'http://<地址>/tanks'   # 末尾不要斜杠，宿主半会自己接 /api/...
+    defaultAi: 'veteran'
+    enemyCount: 20
+    lives: 3
+    sound: true
+    serverBase: 'http://<你的地址>/tanks'   # 末尾不要斜杠，宿主半会自己接 /api/...
 ```
 
-> patch 的 `config` 是**整体替换**而不是深合并。这里没写的键会回落到代码里的默认值
-> （和上面那几个默认值一致，自检会核对），所以只写 `serverBase` 也不会出问题。
+> patch 的 `config` 是**整体替换**而不是深合并：只写 `serverBase` 也不会出问题（没写的键会
+> 回落到代码里的默认值，和上面那份一致，自检会核对），但把五个键都写上更不容易看糊。
 
 也可以直接设环境变量 `TANK_SERVER_BASE`，它的优先级最高。三种来源的优先级是
 **环境变量 → 插件设置 → 代码默认值**。
 
-部署地址属于「谁部署谁填」，所以仓库里只放本机默认值；怎么把服务架到公网、
-怎么在既有 80 端口上做路径反代，见 [`server/README.md`](../../server/README.md) 的「放到公网」。
+默认为什么指向作者的服务器：绝大多数装插件的人不会在自己机器上架一个后台，把默认留成
+`http://127.0.0.1:9010` 的结果是**每个人一进联机就报「连不上打坦克后台服务」**——这是
+作者踩过的坑。默认指向已部署好的公网服务，两个人各装一个插件就能直接凑一桌。
+自己架服务、不想用作者那台，按上面的办法覆盖一行即可；怎么把服务架到公网、怎么在既有
+80 端口上做路径反代，见 [`server/README.md`](../../server/README.md) 的「放到公网」。
 
 ## 宿主半的路由
 

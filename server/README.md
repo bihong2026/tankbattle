@@ -35,8 +35,9 @@ curl http://127.0.0.1:9010/api/health
 # {"ok":true,"service":"tankbattle","database":{...},"onlineWindow":30,...}
 ```
 
-插件的默认 `serverBase` 就是 `http://127.0.0.1:9010`，所以本机这么起起来之后**不用改插件**
-就能联机。起在别处就在 `$DSH_HOME/cordis.patch.yml` 里把 `serverBase` 指过去。
+插件**默认连的是作者公网部署的那份服务**（`http://122.51.206.118/tanks`），所以自己在本机
+起了以后要**显式把插件指过来**，联机才会走本地这套：在 `$DSH_HOME/cordis.patch.yml` 里把
+`serverBase` 改成 `http://127.0.0.1:9010`，或者设环境变量 `TANK_SERVER_BASE`。
 
 生产环境交给 systemd + gunicorn（`deploy/tankserver.service` 是现成的 unit，路径和用户名
 按自己的实际情况改）：

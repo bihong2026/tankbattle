@@ -18,9 +18,10 @@
 #   lives        我方一共几条命，1 到 9
 #   sound        要不要音效（音效是现场合成的，不带任何音频文件）
 #
-# serverBase 是后台服务的地址（联机功能要用）。默认连本机 9010，也就是按仓库里
-# server/ 那套自己起一个；部署在别处就改这里，或者设环境变量 TANK_SERVER_BASE。
-# 部署地址属于「谁部署谁填」，所以仓库里默认只放本机地址。
+# serverBase 是后台服务的地址（联机功能要用）。默认指向仓库作者公网部署的那一份，
+# 所以装完不动任何配置就能和别人一起玩；想连自己架的服务，改这一行即可
+# （末尾不要带斜杠，宿主半会自己接 /api/...），或者设环境变量 TANK_SERVER_BASE，
+# 环境变量优先级最高。自建服务的完整步骤见 server/README.md 的「放到公网」。
 - insert:
     - id: tank-battle
       name: 'dsh-tank-battle'
@@ -29,4 +30,4 @@
         enemyCount: 20
         lives: 3
         sound: true
-        serverBase: 'http://127.0.0.1:9010'
+        serverBase: 'http://122.51.206.118/tanks'

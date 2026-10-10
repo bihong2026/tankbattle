@@ -204,7 +204,11 @@ check("战绩文件格式版本是数字", typeof statsModule.STATS_VERSION, "nu
 // ============================================================
 
 headline("后台服务契约");
-check("默认连本机服务端", host.DEFAULT_SERVER_BASE, "http://127.0.0.1:9010");
+check("默认连作者公网部署的服务端", host.DEFAULT_SERVER_BASE, "http://122.51.206.118/tanks");
+// 包里那份 patch 和代码里的默认值必须同一个地址：两边漂了的话，装好不改配置的人
+// 连的是 patch 那份、拼地址用的又是代码那份，「换个默认地址」就会变成半好不坏。
+const patchServerBase = (patch.match(/serverBase:\s*'([^']*)'/) ?? [])[1] ?? "";
+check("cordis.patch.yml 里的 serverBase 与代码默认值一致", patchServerBase, host.DEFAULT_SERVER_BASE);
 check("没配 serverBase 就用默认地址", host.resolveServerBase({}), host.DEFAULT_SERVER_BASE);
 check("配了 serverBase 就用配置的", host.resolveServerBase({ serverBase: "https://tanks.example.com" }), "https://tanks.example.com");
 check("地址末尾的斜杠剪掉，免得拼出双斜杠", host.resolveServerBase({ serverBase: "http://a.b.c:9010///" }), "http://a.b.c:9010");
@@ -251,7 +255,7 @@ async function callProxy(url, method, body, base) {
 const GUEST = "guest-0123456789ab";
 const CUSTOM = "https://tanks.example.com";
 const getCase = await callProxy(`/tank-battle/api/online?user=${GUEST}`, "GET");
-check("反代把路径映射到服务端", getCase.sent.url, `http://127.0.0.1:9010/api/online?user=${GUEST}`);
+check("反代把路径映射到服务端", getCase.sent.url, `${host.DEFAULT_SERVER_BASE}/api/online?user=${GUEST}`);
 check("反代把 GET 带过去", getCase.sent.init.method, "GET");
 check("反代不给自己加请求体", getCase.sent.init.body, undefined);
 check("反代原样回状态码", getCase.res.status, 201);

@@ -48,13 +48,17 @@ export const ACTIONS = ["ping", "stats", "record", "identity"];
 export const API_PREFIX = `${ROUTE_BASE}/api`;
 
 /**
- * 后台服务的默认地址：自己起一个服务端，默认就在本机 9010。
+ * 后台服务的默认地址：仓库作者公网部署的那一份，装完不改配置就能联机。
  *
- * 部署地址属于「谁部署谁填」，不进源码 —— 想指到别的机器，就在自己的
- * `$DSH_HOME/cordis.patch.yml` 里覆盖这个插件的 `serverBase`，或者设环境变量
- * `TANK_SERVER_BASE`。两者都没有才落到这个默认值。
+ * 之前这里写的是 `http://127.0.0.1:9010`（= 自己按 server/ 起一个服务端），结果是
+ * 联机时必然报「连不上打坦克后台服务」——绝大多数人不会在本机架服务端。所以默认
+ * 直接指向已部署好的公网服务，成对开黑的人两边都装同一个插件就能直接连上。
+ *
+ * 自己架服务端的，不用改源码：在 `$DSH_HOME/cordis.patch.yml` 里覆盖这个插件的
+ * `serverBase`，或者设环境变量 `TANK_SERVER_BASE`。优先级是
+ * **环境变量 → 插件设置 → 这个默认值**。
  */
-export const DEFAULT_SERVER_BASE = "http://127.0.0.1:9010";
+export const DEFAULT_SERVER_BASE = "http://122.51.206.118/tanks";
 
 /** 反代请求的超时。超了就当后台没起来，给前端一句人话。 */
 export const PROXY_TIMEOUT_MS = 8000;

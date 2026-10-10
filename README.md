@@ -67,9 +67,13 @@ dsh --profile <profile>
 单人 / 组队 / 对战三种模式都能玩，四档 AI 随时切换，屏幕上的方向键也能用
 （二号位是 `I` `J` `K` `L` + `U`）。它引的就是插件里**同一份** `client.js`，不是另抄一版。
 
-## 起联机后台（可选）
+## 联机后台
 
-**不装后台也能玩**：单人模式、预览页都跟后台无关；组队和对战才需要它。
+**联机开箱可用**：插件的默认后台地址指向作者已经架好的公网服务
+`http://122.51.206.118/tanks`，所以两个人各装一个插件、点开大厅就能互相看见、开房对局，
+**不用自己起任何服务**。单人模式、预览页更是跟后台完全无关。
+
+### 想自己架一个后台（可选）
 
 ```sh
 cd server
@@ -78,7 +82,15 @@ python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
 ./venv/bin/python app.py             # 默认监听 0.0.0.0:9010
 ```
 
-插件的默认后台地址就是 `http://127.0.0.1:9010`，所以本机这么起起来之后**不用改插件**。
+架起来之后**插件默认不会连它**（默认连的是作者那台），把插件指过去即可（三选一，
+前两种改完要重启）：
+
+- 编辑 `$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh/cordis.patch.yml`，不存在就新建），
+  覆盖插件设置里的 `serverBase` —— 见 [`plugins/tank-battle/README.md`](plugins/tank-battle/README.md#插件设置默认值)；
+- 或者设环境变量 `TANK_SERVER_BASE=http://127.0.0.1:9010`；
+- 或者干脆改仓库里 `plugins/tank-battle/cordis.patch.yml` 那一行（本地自己用可以这么干）。
+
+优先级是 **环境变量 → 插件设置 → 代码默认值**。
 
 **要让公网上的人一起玩**，[`server/README.md`](server/README.md) 里有一整套照做可复现的步骤
 （MySQL 最小化配置、只能本机连的账号、systemd unit、在既有 80 端口上用 `/tanks/` 路径反代、
@@ -86,11 +98,6 @@ python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
 
 - 后端只监听 `127.0.0.1:9010`，**不占任何新端口**；
 - 对外走 `http://<你的域名或公网 IP>/tanks`。
-
-把插件指过去有两种办法（任选其一，**改完要重启**）：
-
-- 改插件 `cordis.patch.yml` 里的 `serverBase`；
-- 或者设环境变量 `TANK_SERVER_BASE=https://...`。
 
 接口清单、容量实测（25~50 桌的拐点是怎么量出来的）与部署脚本见
 [`server/README.md`](server/README.md)。
