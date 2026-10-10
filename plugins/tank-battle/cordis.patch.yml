@@ -1,0 +1,32 @@
+# 打坦克：侧栏一个页面，红白机经典打坦克。单人打 NPC，也能和别人组队 / 对战。
+#
+# 它占两个官方插槽（都用同一个 id 串起来），不改任何官方文件：
+#   - sidebar.panellist         侧栏那一项「打坦克」
+#   - 布局 root 的 keyed main   点侧栏那一项打开的整页
+# 游戏全部跑在浏览器端（Canvas + requestAnimationFrame），像素先画在 240×208 的
+# 离屏画布上再整数倍放大，所以放大也不糊。
+#
+# 宿主半注册四条同源路由：/tank-battle/ping（探活 + 版本自检）、/stats、/record
+# （战绩落盘）、/identity（报本机身份：登录的账号，没登录就是游客号）；另把
+# /tank-battle/api/* 整段反代到打坦克后台服务，在线发现、邀请、房间、积分都走
+# 这一条。反代必须走宿主：前端直连后台会被浏览器判跨域 / 混合内容。
+#
+# 下面四项只是「开局时的默认值」，装好不改也能玩；改这里要重启应用才生效。
+# 游戏页里的选择只作用于当次，不写盘。敌方 AI 在游戏页里可以随时换，下一帧就生效。
+#   defaultAi    敌方坦克的 AI。rookie 新兵 / veteran 老兵 / hunter 猎手 / ace 王牌
+#   enemyCount   一关出多少辆敌方坦克，4 到 60，原版是 20
+#   lives        我方一共几条命，1 到 9
+#   sound        要不要音效（音效是现场合成的，不带任何音频文件）
+#
+# serverBase 是后台服务的地址（联机功能要用）。默认连本机 9010，也就是按仓库里
+# server/ 那套自己起一个；部署在别处就改这里，或者设环境变量 TANK_SERVER_BASE。
+# 部署地址属于「谁部署谁填」，所以仓库里默认只放本机地址。
+- insert:
+    - id: tank-battle
+      name: 'dsh-tank-battle'
+      config:
+        defaultAi: 'veteran'
+        enemyCount: 20
+        lives: 3
+        sound: true
+        serverBase: 'http://127.0.0.1:9010'

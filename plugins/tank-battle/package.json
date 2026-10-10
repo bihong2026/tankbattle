@@ -1,0 +1,46 @@
+{
+  "name": "dsh-tank-battle",
+  "version": "0.3.0",
+  "private": true,
+  "license": "MIT",
+  "description": "打坦克：在侧栏开一个页面，红白机经典打坦克（Battle City）。单人/组队打 NPC，也可以各带一队 NPC 互相对战，四档 AI 随时换，带在线用户发现与积分榜",
+  "type": "module",
+  "icon": "./icon.svg",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./identity": "./identity.js",
+    "./tank-stats": "./tank-stats.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "identity.js",
+    "tank-stats.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "preview.html",
+    "locale/zh.json",
+    "locale/en.json",
+    "README.md",
+    "test/run.mjs",
+    "test/render.mjs",
+    "test/preview.mjs"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  }
+}

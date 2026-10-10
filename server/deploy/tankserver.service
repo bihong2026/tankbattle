@@ -1,0 +1,31 @@
+[Unit]
+Description=Tank Battle backend service (tankbattle)
+# 换成你自己的访问地址或去掉这一行。
+Documentation=http://127.0.0.1:9010/
+After=network.target mysqld.service
+Wants=mysqld.service
+
+[Service]
+Type=simple
+# 改成跑这个服务的系统用户（下面所有路径都要跟着它）。
+User=tank
+Group=tank
+WorkingDirectory=/opt/tankbattle/server
+Environment=TANK_HOST=0.0.0.0
+Environment=TANK_PORT=9010
+Environment=TANK_DB_HOST=127.0.0.1
+Environment=TANK_DB_PORT=3306
+# 数据库口令改这里，别留在源码里。
+Environment=TANK_DB_USER=tank
+Environment=TANK_DB_PASSWORD=tank
+Environment=TANK_DB_NAME=tankbattle
+Environment=PYTHONUNBUFFERED=1
+# gunicorn 托管：4 个 worker，够这个小服务用；日志进 journal。
+ExecStart=/opt/tankbattle/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:9010 --access-logfile - --error-logfile - --timeout 30 app:app
+Restart=always
+RestartSec=3
+KillSignal=SIGTERM
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

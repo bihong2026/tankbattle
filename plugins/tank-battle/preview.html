@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>打坦克 · 单机预览</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 20px 32px;
+    background: #f5f6f7; color: #1f2329;
+    font: 14px/1.5 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  h1 { margin: 0; font-size: 18px; font-weight: 500; }
+  .sub { margin: 4px 0 0; color: #646a73; font-size: 12px; }
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .chip {
+    flex: 0 0 auto; display: inline-flex; align-items: center; height: 22px; padding: 0 9px;
+    border-radius: 999px; background: #eceef0; color: #646a73; font-size: 12px;
+  }
+  .bar {
+    margin-top: 14px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px;
+    padding: 10px 12px; border: 1px solid #eef0f1; border-radius: 12px; background: #fff;
+  }
+  label.field { display: flex; flex-direction: column; gap: 4px; color: #646a73; font-size: 12px; }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  legend { padding: 0; color: #646a73; font-size: 12px; }
+  .modes { display: flex; gap: 4px; }
+  .modes button[data-on="true"] { background: #1f2329; color: #fff; border-color: #1f2329; }
+  select, button {
+    height: 30px; padding: 0 8px; border: 1px solid #e4e6eb; border-radius: 8px;
+    background: #fff; color: inherit; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  select { min-width: 96px; }
+  button.primary { background: #1664ff; border-color: #1664ff; color: #fff; }
+  button.danger { color: #d83931; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .spacer { flex: 1 1 auto; }
+  .status {
+    margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+    padding: 8px 12px; border: 1px solid #eef0f1; border-radius: 12px; background: #fff; font-size: 12px; color: #646a73;
+  }
+  .status b { color: #1f2329; font-weight: 600; }
+  .status .msg { flex: 1 1 220px; }
+  .status .msg[data-kind="ok"] { color: #1a7f37; }
+  .status .msg[data-kind="error"] { color: #d83931; }
+  .status .msg[data-kind="warn"] { color: #b26a00; }
+  .stage {
+    margin-top: 10px; display: flex; justify-content: center; align-items: center;
+    min-height: 240px; padding: 8px; border: 1px solid #eef0f1; border-radius: 12px; background: #fff;
+  }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .foot {
+    margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+    color: #646a73; font-size: 12px;
+  }
+  .keys { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+  .kbd {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px;
+    padding: 0 5px; border: 1px solid #dcdfe6; border-bottom-width: 2px; border-radius: 5px;
+    background: #fff; color: #1f2329; font-size: 11px;
+  }
+  .pad { display: flex; gap: 6px; }
+  .pad button { width: 34px; height: 34px; padding: 0; }
+  .pad button.fire { width: auto; padding: 0 12px; background: #ffece8; border-color: #f7c9c0; color: #d83931; }
+  .note { flex: 1 1 220px; }
+  a { color: #1664ff; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div>
+    <h1>打坦克 · 单机预览</h1>
+    <p class="sub">这个页面 <strong>不装插件也能跑</strong>：它直接调用插件里那一份真实引擎（<code>client.js</code> 导出的 <code>engine</code>），
+      所以画面、AI、物理跟装好之后完全一致。联机（大厅 / 邀请 / 组队 / 对战）不在这个页面里 —— 那部分要装插件后连后台服务。</p>
+  </div>
+  <span class="chip" id="ver">—</span>
+</div>
+
+<div class="bar">
+  <fieldset>
+    <legend>模式</legend>
+    <div class="modes" id="modes"></div>
+  </fieldset>
+  <label class="field"><span>敌方 AI</span><select id="ai"></select></label>
+  <label class="field"><span>敌人总数</span><select id="enemyCount"></select></label>
+  <label class="field"><span>我方生命</span><select id="lives"></select></label>
+  <label class="field"><span>起始关卡</span><select id="stage"></select></label>
+  <span class="spacer"></span>
+  <button id="start" class="primary">开始游戏</button>
+  <button id="pause" disabled>暂停</button>
+  <button id="stop" class="danger" disabled>结束游戏</button>
+</div>
+
+<div class="status">
+  <span>模式 <b id="s-mode">—</b></span>
+  <span>得分 <b id="s-score">0</b></span>
+  <span id="s-scoreB-wrap" hidden>红队 <b id="s-scoreB">0</b></span>
+  <span>关卡 <b id="s-stage">1</b></span>
+  <span>生命 <b id="s-lives">3</b></span>
+  <span>火力 <b id="s-level">★0</b></span>
+  <span>剩余敌兵 <b id="s-left">0</b></span>
+  <span class="msg" id="s-msg">选好设置，点「开始游戏」。</span>
+</div>
+
+<div class="stage"><canvas id="screen"></canvas></div>
+
+<div class="foot">
+  <div class="keys">
+    <span class="keys"><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">←</span><span class="kbd">→</span>或 <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> 控一号位</span>
+    <span class="keys"><span class="kbd">空格</span> 一号位开火</span>
+    <span class="keys"><span class="kbd">I</span><span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> 控二号位（组队 / 对战才有）· <span class="kbd">U</span> 二号位开火</span>
+    <span class="keys"><span class="kbd">Esc</span> 暂停</span>
+  </div>
+  <div class="pad">
+    <button data-dir="left" aria-label="左">◀</button>
+    <button data-dir="up" aria-label="上">▲</button>
+    <button data-dir="down" aria-label="下">▼</button>
+    <button data-dir="right" aria-label="右">▶</button>
+    <button class="fire" data-fire="1">开火</button>
+  </div>
+  <span class="note">砖墙一发打穿一格；三星子弹能打穿钢墙；对战打掉对方基地即胜。</span>
+</div>
+
+<!--
+  加载插件浏览器半：它一进来就调 window.__ModuleLoader__.load({ id, factory })，把 factory 收下即可。
+  不真的渲染那个 React 组件（那是宿主里的事），只用它的 engine。
+-->
+<script>window.__ModuleLoader__ = { load(definition) { window.__TANK_PLUGIN__ = definition; } };</script>
+<script src="client.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var definition = window.__TANK_PLUGIN__;
+  if (!definition) { throw new Error("client.js 没有调用 __ModuleLoader__.load"); }
+
+  // 这里只取 engine，不渲染 React 组件，所以 React 给个占位就行 —— 但必须给，
+  // 因为 factory 会 require 它。真渲染（TanksPage）在宿主里才发生。
+  var reactStub = {
+    createElement: function () { return null; },
+    useState: function (initial) { return [typeof initial === "function" ? initial() : initial, function () {}]; },
+    useRef: function (initial) { return { current: initial }; },
+    useEffect: function () {},
+    useMemo: function (factory) { return factory(); },
+    useCallback: function (factory) { return factory; }
+  };
+  var client = definition.factory(function (name) {
+    if (name === "react") return reactStub;
+    throw new Error("浏览器半不该 require 别的包：" + name);
+  });
+  var E = client.engine;
+
+  // 版本号从引擎拿，不在页面里另写一遍，也不用 fetch —— 直接双击打开（file://）时
+  // 浏览器会把 fetch 拦掉，那时整页会少一行版本号。
+  document.getElementById("ver").textContent = "v" + E.VERSION;
+
+  // ---------- DOM ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $("screen");
+  var stage = document.querySelector(".stage");
+  var off = document.createElement("canvas");
+  off.width = E.VIEW_W;
+  off.height = E.VIEW_H;
+  var offCtx = off.getContext("2d");
+  var ctx = canvas.getContext("2d");
+  var scale = 3;
+
+  function syncScale() {
+    var rect = stage.getBoundingClientRect();
+    var next = Math.max(1, Math.min(8, Math.floor(Math.min((rect.width - 16) / E.VIEW_W, (rect.height - 16) / E.VIEW_H))));
+    if (!Number.isFinite(next) || next < 1) next = 1;
+    if (next === scale && canvas.width) return;
+    scale = next;
+    var dpr = Math.min(3, window.devicePixelRatio || 1);
+    canvas.width = Math.round(E.VIEW_W * scale * dpr);
+    canvas.height = Math.round(E.VIEW_H * scale * dpr);
+    canvas.style.width = (E.VIEW_W * scale) + "px";
+    canvas.style.height = (E.VIEW_H * scale) + "px";
+    ctx.imageSmoothingEnabled = false;
+    redraw();
+  }
+  window.addEventListener("resize", syncScale);
+
+  function blit() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(off, 0, 0, E.VIEW_W, E.VIEW_H, 0, 0, canvas.width, canvas.height);
+  }
+
+  // ---------- 设置项 ----------
+  var AI_LABELS = {};
+  var aiSelect = $("ai");
+  E.AI_ORDER.forEach(function (id) {
+    var profile = E.AI_PROFILES[id];
+    AI_LABELS[id] = profile.label;
+    var option = document.createElement("option");
+    option.value = id;
+    option.textContent = profile.label + " · " + profile.help;
+    aiSelect.appendChild(option);
+  });
+  aiSelect.value = "veteran";
+
+  function fillSelect(node, pairs, value) {
+    pairs.forEach(function (pair) {
+      var option = document.createElement("option");
+      option.value = String(pair[0]);
+      option.textContent = pair[1];
+      node.appendChild(option);
+    });
+    node.value = String(value);
+  }
+  fillSelect($("enemyCount"), [[10, "10 辆（短局）"], [20, "20 辆（标准）"], [30, "30 辆（持久战）"]], 20);
+  fillSelect($("lives"), [[1, "1 条"], [3, "3 条"], [5, "5 条"], [9, "9 条"]], 3);
+  fillSelect($("stage"), [[1, "第 1 关"], [2, "第 2 关"], [3, "第 3 关"], [4, "第 4 关"]], 1);
+
+  // 模式：单人 / 组队 / 对战。组队与对战在这里是「本机一个人带两个座位」的单机演示，
+  // 真正的两个人各坐一边要装插件联机。所以标签上写清楚。
+  var LOCAL_MODES = [
+    ["solo", "单人", "一个人打 NPC"],
+    ["coop", "组队", "两个座位都归你（联机时另一个座位是队友）"],
+    ["pvp", "对战", "两个座位都归你，各带一队 NPC 互打（联机时是真人对手）"]
+  ];
+  var modesBox = $("modes");
+  var mode = "solo";
+  LOCAL_MODES.forEach(function (item) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.dataset.mode = item[0];
+    button.dataset.on = String(item[0] === mode);
+    button.title = item[2];
+    button.textContent = item[1];
+    button.addEventListener("click", function () {
+      if (phase !== "idle") return;
+      mode = item[0];
+      Array.prototype.forEach.call(modesBox.children, function (other) {
+        other.dataset.on = String(other.dataset.mode === mode);
+      });
+      say(item[1] + "：" + item[2] + "。", "");
+      redraw();
+    });
+    modesBox.appendChild(button);
+  });
+
+  // ---------- 游戏状态 ----------
+  var STEP = 1000 / 60;
+  var PHASE_IDLE = "idle";
+  var game = null;
+  var phase = PHASE_IDLE;
+  // 两份输入，对应两个座位 —— 引擎就是按座位读输入（game.inputs[seat]）。
+  // 座位 0 = 本机（方向键 / WASD + 空格），座位 1 = 二号位（I J K L + U）。
+  // 单人模式下座位 1 根本不存在，多出来的那份输入不会有人读。
+  var inputs = [{ dirs: [], fire: false }, { dirs: [], fire: false }];
+  var acc = 0;
+  var last = 0;
+  var raf = 0;
+  var message = "选好设置，点「开始游戏」。";
+  var tone = "";
+
+  function say(text, kind) {
+    message = text;
+    tone = kind || "";
+    var node = $("s-msg");
+    node.textContent = message;
+    if (tone) node.setAttribute("data-kind", tone);
+    else node.removeAttribute("data-kind");
+  }
+
+  function options() {
+    return {
+      mode: mode,
+      ai: aiSelect.value,
+      enemyCount: Number($("enemyCount").value),
+      lives: Number($("lives").value),
+      stage: Number($("stage").value),
+      sound: false
+    };
+  }
+
+  function redraw() {
+    var scene = game;
+    if (!scene) {
+      // 没开局也画一张静态战场，让人先看到这一关长什么样。
+      scene = E.createGame(options());
+      scene.player = null;
+      scene.players = [];
+      scene.enemies = [];
+      scene.bullets = [];
+      scene.powerups = [];
+      scene.effects = [];
+      scene.status = "idle";
+    }
+    E.drawScene(offCtx, scene, Date.now());
+    blit();
+  }
+
+  function publish() {
+    if (!game) return;
+    $("s-mode").textContent = E.MODE_LABELS[game.cfg.mode] || game.cfg.mode;
+    $("s-score").textContent = String(game.cfg.mode === "pvp" ? game.scoreA : game.score);
+    $("s-scoreB-wrap").hidden = game.cfg.mode !== "pvp";
+    $("s-scoreB").textContent = String(game.scoreB);
+    $("s-stage").textContent = String(game.stage);
+    $("s-lives").textContent = String(Math.max(0, game.livesBySeat[0] || 0));
+    $("s-level").textContent = "★" + String(game.levelBySeat[0] || 0);
+    var left = game.enemies.filter(function (e) { return e.alive; }).length + (game.queue.length - game.spawnIndex);
+    $("s-left").textContent = String(Math.max(0, left));
+  }
+
+  function setPhase(next) {
+    phase = next;
+    var running = next === "playing" || next === "paused";
+    $("start").disabled = running;
+    $("pause").disabled = !running;
+    $("stop").disabled = next === PHASE_IDLE;
+    $("start").textContent = (next === "over" || next === "win") ? "再来一局" : "开始游戏";
+    $("pause").textContent = next === "paused" ? "继续" : "暂停";
+  }
+
+  function halt() {
+    if (raf) window.cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  function frame(now) {
+    raf = window.requestAnimationFrame(frame);
+    var delta = last === 0 ? STEP : Math.min(50, now - last);
+    last = now;
+    if (phase !== "paused") {
+      acc += delta;
+      var guard = 0;
+      while (acc >= STEP && guard < 8) {
+        E.step(game, STEP);
+        acc -= STEP;
+        guard += 1;
+      }
+      if (acc > STEP * 8) acc = 0;
+      drain();
+    }
+    E.drawScene(offCtx, game, now);
+    if (phase === "paused") {
+      // 战场是 208×208（13 格 × 16px），右边 32px 是状态栏 —— 跟插件里那条遮罩一致。
+      // drawText 没有对外导出，所以这里只画压暗条，「已暂停」写在上面状态条里。
+      offCtx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      offCtx.fillRect(6, 208 / 2 - 14, 208 - 12, 28);
+    }
+    blit();
+    publish();
+    if ((game.status === "over" || game.status === "win") && phase !== "over" && phase !== "win") {
+      setPhase(game.status);
+      halt();
+      publish();
+    }
+  }
+
+  function drain() {
+    if (!game || game.events.length === 0) return;
+    for (var i = 0; i < game.events.length; i += 1) {
+      var event = game.events[i];
+      if (event.type === "powerup") say("捡到道具：" + (game.lastPowerup || "未知"), "ok");
+      else if (event.type === "clear" && !event.last) say("第 " + game.stage + " 关通过！", "ok");
+      else if (event.type === "clear" && event.last) say("四个关卡全部通过，通关！", "ok");
+      else if (event.type === "over") say("基地被摧毁，本局结束。", "error");
+    }
+    game.events.length = 0;
+  }
+
+  function start() {
+    halt();
+    inputs.forEach(function (one) { one.dirs.length = 0; one.fire = false; });
+    game = E.createGame(options());
+    // 座位 0 是本机，座位 1 是二号位；两份输入直接接到引擎按座位读的那张表上。
+    game.inputs[0] = inputs[0];
+    game.inputs[1] = inputs[1];
+    acc = 0;
+    last = 0;
+    setPhase("playing");
+    publish();
+    say("第 " + game.stage + " 关开始 · 敌方 AI：" + AI_LABELS[game.cfg.ai] +
+      (mode === "solo" ? "" : " · " + E.MODE_LABELS[mode] + "：方向键控一号位，I J K L 控二号位"), "");
+    raf = window.requestAnimationFrame(frame);
+  }
+
+  function stop() {
+    halt();
+    game = null;
+    inputs.forEach(function (one) { one.dirs.length = 0; one.fire = false; });
+    setPhase(PHASE_IDLE);
+    say("本局已结束。改完设置可以再开一局。", "");
+    redraw();
+  }
+
+  function togglePause() {
+    if (phase === "playing") {
+      setPhase("paused");
+      inputs.forEach(function (one) { one.dirs.length = 0; one.fire = false; });
+      say("已暂停。点「继续」或再按一次 Esc 接着打。", "warn");
+      E.drawScene(offCtx, game, Date.now());
+      blit();
+    } else if (phase === "paused") {
+      setPhase("playing");
+      last = 0;
+      say("继续。", "");
+    }
+  }
+
+  $("start").addEventListener("click", start);
+  $("pause").addEventListener("click", togglePause);
+  $("stop").addEventListener("click", stop);
+
+  // ---------- 键盘 ----------
+  var KEY_DIR = {
+    arrowup: [0, E.UP], w: [0, E.UP],
+    arrowdown: [0, E.DOWN], s: [0, E.DOWN],
+    arrowleft: [0, E.LEFT], a: [0, E.LEFT],
+    arrowright: [0, E.RIGHT], d: [0, E.RIGHT],
+    i: [1, E.UP], k: [1, E.DOWN], j: [1, E.LEFT], l: [1, E.RIGHT]
+  };
+  var KEY_FIRE = { " ": 0, spacebar: 0, enter: 0, u: 1 };
+  function release(seat, dir) {
+    var dirs = inputs[seat].dirs;
+    var at = dirs.indexOf(dir);
+    if (at !== -1) dirs.splice(at, 1);
+  }
+  window.addEventListener("keydown", function (event) {
+    if (phase !== "playing" && phase !== "paused") return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    var tag = (event.target && event.target.tagName ? event.target.tagName : "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    var key = String(event.key || "").toLowerCase();
+    if (key === "escape" || key === "p") { event.preventDefault(); togglePause(); return; }
+    var dir = KEY_DIR[key];
+    if (dir !== undefined) {
+      event.preventDefault();
+      if (inputs[dir[0]].dirs.indexOf(dir[1]) === -1) inputs[dir[0]].dirs.push(dir[1]);
+      return;
+    }
+    if (KEY_FIRE[key] !== undefined) {
+      event.preventDefault();
+      inputs[KEY_FIRE[key]].fire = true;
+    }
+  });
+  window.addEventListener("keyup", function (event) {
+    var key = String(event.key || "").toLowerCase();
+    var dir = KEY_DIR[key];
+    if (dir !== undefined) release(dir[0], dir[1]);
+    if (KEY_FIRE[key] !== undefined) inputs[KEY_FIRE[key]].fire = false;
+  });
+  window.addEventListener("blur", function () {
+    inputs.forEach(function (one) { one.dirs.length = 0; one.fire = false; });
+  });
+
+  // ---------- 屏幕上的方向键（触屏，只管一号位）----------
+  Array.prototype.forEach.call(document.querySelectorAll(".pad button"), function (button) {
+    var dir = button.dataset.dir !== undefined
+      ? { left: E.LEFT, up: E.UP, down: E.DOWN, right: E.RIGHT }[button.dataset.dir]
+      : undefined;
+    var isFire = button.dataset.fire === "1";
+    function on(event) {
+      event.preventDefault();
+      if (phase !== "playing" && phase !== "paused") return;
+      if (isFire) inputs[0].fire = true;
+      else if (dir !== undefined && inputs[0].dirs.indexOf(dir) === -1) inputs[0].dirs.push(dir);
+    }
+    function off() {
+      if (isFire) inputs[0].fire = false;
+      else if (dir !== undefined) release(0, dir);
+    }
+    button.addEventListener("pointerdown", on);
+    button.addEventListener("pointerup", off);
+    button.addEventListener("pointercancel", off);
+    button.addEventListener("pointerleave", off);
+  });
+
+  setPhase(PHASE_IDLE);
+  syncScale();
+  redraw();
+  publish();
+  say("选好设置，点「开始游戏」。方向键移动，空格开火。", "");
+})();
+</script>
+</body>
+</html>

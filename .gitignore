@@ -1,0 +1,25 @@
+# 依赖 / 虚拟环境
+node_modules/
+venv/
+__pycache__/
+*.py[cod]
+
+# 构建产物与临时文件
+*.log
+*.bak
+*.tmp
+tmp/
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# 本机数据（不该进仓库）
+.dsh/
+*.local.json
+
+# Agent 工作记录（属于各人本机的工具状态，不是项目代码）
+.workbuddy/

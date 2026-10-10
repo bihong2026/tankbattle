@@ -1,0 +1,10 @@
+# 仓库里统一用 LF：这是个跨平台项目（插件跑 Windows/macOS/Linux，服务端跑 Linux），
+# 免得因为行尾差异在 diff 里刷出一堆噪音。
+* text=auto eol=lf
+
+# 二进制文件别当文本处理
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
