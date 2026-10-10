@@ -1,8 +1,9 @@
 # 打坦克 · Tank Battle
 
+<!-- 徽章一律用静态 badge（不需要 shields 回源 GitHub API，加载快、不会显示 invalid）。
+     发新版时请把下面 dsh-tank-battle 那一条的版本号与 plugins/tank-battle/package.json 同步。 -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/bihong2026/tankbattle?label=stars)](https://github.com/bihong2026/tankbattle/stargazers)
-[![plugin version](https://img.shields.io/github/package-json/v/bihong2026/tankbattle?filename=plugins%2Ftank-battle%2Fpackage.json&label=dsh-tank-battle&color=4d6bfe)](plugins/tank-battle/package.json)
+[![dsh-tank-battle](https://img.shields.io/badge/dsh--tank--battle-v0.3.1-4d6bfe.svg)](plugins/tank-battle/package.json)
 [![DeepSeek Harness plugin](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4d6bfe.svg)](#安装)
 [![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#安装)
 
