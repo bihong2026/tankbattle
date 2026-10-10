@@ -173,12 +173,15 @@ node test/preview.mjs  # 预览页：首屏 → 单人 → 组队两套键 → �
 
 | 标签 | 含义 |
 | --- | --- |
-| `dsh`、`dsh-plugin` | 这是一个 DeepSeek Harness（dsh）插件 |
+| `dsh`、`dsh-plugin`、`dsh-plugins` | 这是一个 DeepSeek Harness（dsh）插件 |
 | `deepseek`、`deepseek-harness`、`deepseek-harness-plugin` | 运行宿主 |
 | `cordis`、`cordis-plugin` | 底层插件框架（Harness 用 Cordis 装载插件） |
 | `tank-battle`、`battle-city`、`tank-game` | 玩法关键词 |
 | `canvas-game`、`html5-game` | 实现方式（纯浏览器端 Canvas） |
 | `multiplayer` | 支持联机 |
+
+其中 **`dsh-plugin` 是社区约定俗成的发现标签**（GitHub 上已有上万个仓库在用它，
+社区索引 `awesome-dsh-plugin` 的收录要求里也明确要求打这个标签），所以它最重要。
 
 ## 许可
 
