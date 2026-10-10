@@ -1,0 +1,24 @@
+# 提交给社区索引 awesome-dsh-plugin 的收录条目（原样复制即可）。
+#
+# 目标仓库：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin
+# 提交方式：提一个 PR，只新增「一个文件」，路径为
+#   data/plugins/bihong2026__tankbattle--plugins-tank-battle.yml
+# 文件名规则：<owner>__<repo>--<子包目录用连字符连接>.yml
+#   本项目是 monorepo，插件在 plugins/tank-battle → plugins-tank-battle
+# 两个 README 由脚本从 data/plugins/*.yml 生成，**不要手工改 README**。
+#
+# 收录硬条件（CI 自动查，缺一不可）：
+#   1. package.json 声明 dsh.bundle（本项目 plugins/tank-battle/package.json 已有）
+#   2. 有真实可用代码，非占位/纯 README 仓库
+#   3. 仓库创建满 1 天
+#   4. 仓库已打 dsh-plugin topic（已打）
+#   5. 描述必须属实、不带营销词（维护者会拿描述核对代码）
+#
+# 下面第一个 `url:` 起的部分就是文件正文（本注释块不属于正文）。
+
+url: https://github.com/bihong2026/tankbattle/tree/master/plugins/tank-battle
+name: bihong2026/tankbattle#tank-battle
+category: fun
+description:
+  en: 'Battle City in the harness sidebar: solo against NPC tanks, team up with other online players against NPCs, or play a two-team PvP match with NPC squads; four AI difficulty levels, plus an optional bundled backend for lobby and leaderboard.'
+  zh: '在 Harness 侧栏开一整页玩红白机经典打坦克：单人打 NPC、与在线玩家组队打 NPC，或各带一队 NPC 互相对战；四档 AI，另带可选的后台服务提供大厅与积分榜。'
